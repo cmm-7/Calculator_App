@@ -18,25 +18,22 @@ const Calculator = () => {
     useSelector((state) => state.auth.token) || localStorage.getItem("token");
   const history = useSelector((state) => state.calculations.history); // ✅ Get history from Redux
 
-  // 🔹 Fetch history if the user is logged in
   useEffect(() => {
-    if (token) {
-      console.log("🟡 Fetching history - Token detected:", token);
-      fetchHistory(token)
-        .then((history) => {
-          console.log("✅ History received:", history);
-          dispatch(setHistory(history));
-        })
-        .catch((error) => console.error("❌ Error fetching history:", error));
-    } else {
-      console.log("🚫 No token found, skipping history fetch");
-    }
-  }, [dispatch, token]); // ✅ Include token in dependencies
+    if (!token || history.length > 0) return;
+
+    console.log("🟡 Fetching history - Token detected:", token);
+    fetchHistory(token)
+      .then((history) => {
+        console.log("✅ History received:", history);
+        dispatch(setHistory(history));
+      })
+      .catch((error) => console.error("❌ Error fetching history:", error));
+  }, [dispatch, token, history.length]);
 
   const handleButtonClick = async (value) => {
     if (value === "C") {
-      console.log("🛑 Clearing display"); // Debugging log
-      setInput(""); // ✅ Reset input when "C" is clicked
+      console.log("🛑 Clearing display");
+      setInput("");
       return;
     }
 
@@ -47,9 +44,16 @@ const Calculator = () => {
 
         if (token) {
           console.log("📤 Sending calculation to backend...");
-          dispatch(addCalculation({ expression: input, result }));
-          await saveCalculation(token, input, result);
-          console.log("✅ Calculation saved successfully!");
+
+          // ✅ Save to backend FIRST before updating Redux
+          const savedCalculation = await saveCalculation(token, input, result);
+
+          if (savedCalculation) {
+            dispatch(addCalculation({ expression: input, result }));
+            console.log("✅ Calculation saved successfully!");
+          } else {
+            console.error("❌ Failed to save calculation in backend");
+          }
         }
       } catch (error) {
         console.error("❌ Invalid calculation");

@@ -32,7 +32,6 @@ export const fetchHistory = async (token) => {
 
 export const saveCalculation = async (token, expression, result) => {
   try {
-    console.log("🌍 Sending calculation to backend...");
     const response = await fetch(`${API_BASE_URL}/calculations`, {
       method: "POST",
       headers: {

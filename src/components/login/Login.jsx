@@ -12,11 +12,16 @@ const Login = () => {
   const auth = getAuth(firebaseApp);
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLoggingIn) return; // Prevent duplicate login attempts
+    setIsLoggingIn(true);
+
     if (!email.trim() || !password.trim()) {
       alert("Email and password are required.");
+      setIsLoggingIn(false);
       return;
     }
 
@@ -33,16 +38,19 @@ const Login = () => {
       console.log("✅ Firebase Login Success - Token:", token);
 
       console.log("🚀 Dispatching login to Redux...");
-      await dispatch(login({ token })).unwrap();
+      const result = await dispatch(login({ token })).unwrap();
+
+      console.log("✅ Redux Login Success!", result);
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(userCredential.user));
 
-      console.log("✅ Redux Login Success!");
       navigate("/");
     } catch (error) {
-      console.error("❌ Firebase Login Failed:", error.message);
+      console.error("❌ Firebase Login Failed:", error);
       alert("Login failed: " + error.message);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 

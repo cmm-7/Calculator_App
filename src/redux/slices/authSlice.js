@@ -65,22 +65,21 @@ export const signUp = createAsyncThunk(
 
 export const login = createAsyncThunk(
   "auth/login",
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ token }, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    if (auth.user) {
+      console.log("🔹 Skipping redundant login - User already exists.");
+      return auth;
+    }
+
     try {
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const token = await userCredential.user.getIdToken(); // ✅ Fetch Firebase token
-      console.log("🔑 Firebase Token:", token);
+      console.log("🟢 Redux login - Using token:", token);
 
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ Send the token in the header
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -93,8 +92,10 @@ export const login = createAsyncThunk(
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      console.log("🟢 Redux login success - User:", data.user);
       return { user: data.user, token };
     } catch (error) {
+      console.error("❌ Redux login failed:", error.message);
       return rejectWithValue(error.message);
     }
   }
@@ -142,8 +143,13 @@ export const authSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(login.fulfilled, (state, action) => {
+        if (!action.payload) {
+          console.error("❌ Redux did not receive a valid payload:", action);
+          return;
+        }
         state.user = action.payload.user;
         state.token = action.payload.token;
+        console.log("🟢 Redux State Updated - User:", state.user);
       })
       .addCase(login.rejected, (state, action) => {
         state.error = action.payload;

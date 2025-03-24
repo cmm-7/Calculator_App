@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalculatorDisplay from "./CalculatorDisplay";
 import {
@@ -11,6 +11,7 @@ import HistoryDisplay from "./HistoryDisplay"; // ✅ Import new history compone
 
 const Calculator = () => {
   const [input, setInput] = useState("");
+  const isMounted = useRef(true);
   const dispatch = useDispatch();
 
   // ✅ Move useSelector outside useEffect
@@ -18,16 +19,36 @@ const Calculator = () => {
     useSelector((state) => state.auth.token) || localStorage.getItem("token");
   const history = useSelector((state) => state.calculations.history); // ✅ Get history from Redux
 
+  // Cleanup on component unmount
   useEffect(() => {
-    if (!token || history.length > 0) return;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []); // Empty dependency array means this runs once on mount
 
-    console.log("🟡 Fetching history - Token detected:", token);
-    fetchHistory(token)
-      .then((history) => {
-        console.log("✅ History received:", history);
-        dispatch(setHistory(history));
-      })
-      .catch((error) => console.error("❌ Error fetching history:", error));
+  // History fetching effect
+  useEffect(() => {
+    let isMounted = true; // 1️⃣ Create a flag
+
+    const fetchHistoryData = async () => {
+      if (!token || history.length > 0) return;
+
+      try {
+        const historyData = await fetchHistory(token);
+        if (isMounted && historyData) {
+          // 2️⃣ Check if still mounted
+          dispatch(setHistory(historyData));
+        }
+      } catch (error) {
+        console.error("❌ Error fetching history:", error);
+      }
+    };
+
+    fetchHistoryData();
+
+    return () => {
+      isMounted = false; // 3️⃣ Cleanup when unmounting
+    };
   }, [dispatch, token, history.length]);
 
   const handleButtonClick = async (value) => {
@@ -49,7 +70,14 @@ const Calculator = () => {
           const savedCalculation = await saveCalculation(token, input, result);
 
           if (savedCalculation) {
-            dispatch(addCalculation({ expression: input, result }));
+            // Add the calculation with its ID from the backend
+            dispatch(
+              addCalculation({
+                id: savedCalculation.id,
+                expression: input,
+                result: result,
+              })
+            );
             console.log("✅ Calculation saved successfully!");
           } else {
             console.error("❌ Failed to save calculation in backend");

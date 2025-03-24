@@ -6,6 +6,10 @@ import Navbar from "./components/navbar/Navbar";
 import SignUp from "./components/signup/SignUp";
 import Login from "./components/login/Login";
 import Calculator from "./components/calculator/Calculator";
+import TwoFactorSettings from "./components/profile/TwoFactorSettings";
+import TwoFactorVerification from "./components/auth/TwoFactorVerification";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import "./utils/firebaseConfig"; // Import Firebase configuration
 
 function App() {
   const dispatch = useDispatch();
@@ -36,6 +40,15 @@ function App() {
       <Routes>
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-2fa" element={<TwoFactorVerification />} />
+        <Route
+          path="/2fa-settings"
+          element={
+            <PrivateRoute>
+              <TwoFactorSettings />
+            </PrivateRoute>
+          }
+        />
         <Route path="/" element={<Calculator />} />
       </Routes>
     </Router>

@@ -23,23 +23,28 @@ function Navbar() {
       className="bg-gray-800 text-white p-4 flex justify-between items-center"
     >
       <h1 className="text-xl font-bold">Calculator App</h1>
-      <div>
-        <Link to="/" className="px-4">
+      <div className="flex items-center space-x-4">
+        <Link to="/" className="hover:text-gray-300">
           Calculator
         </Link>
         {user ? (
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 px-4 py-2 rounded"
-          >
-            Logout
-          </button>
+          <>
+            <Link to="/2fa-settings" className="hover:text-gray-300">
+              2FA Settings
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 px-4 py-2 rounded hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </>
         ) : (
           <>
-            <Link to="/login" className="px-4">
+            <Link to="/login" className="hover:text-gray-300">
               Login
             </Link>
-            <Link to="/signup" className="px-4">
+            <Link to="/signup" className="hover:text-gray-300">
               Sign Up
             </Link>
           </>

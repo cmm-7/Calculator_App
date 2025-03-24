@@ -47,3 +47,42 @@ export const saveCalculation = async (token, expression, result) => {
     console.error("❌ Error saving calculation:", error);
   }
 };
+
+export const updateCalculation = async (token, id, expression, result) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/calculations/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ expression, result }),
+    });
+
+    if (!response.ok) throw new Error("Failed to update calculation");
+    console.log("✅ Calculation updated successfully");
+    return await response.json();
+  } catch (error) {
+    console.error("❌ Error updating calculation:", error);
+    throw error;
+  }
+};
+
+export const deleteCalculation = async (token, id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/calculations/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to delete calculation");
+    console.log("✅ Calculation deleted successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Error deleting calculation:", error);
+    throw error;
+  }
+};

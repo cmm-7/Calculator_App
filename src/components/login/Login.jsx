@@ -1,62 +1,58 @@
 import React, { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { login } from "../../redux/slices/authSlice";
-import { firebaseApp } from "../../utils/firebaseConfig";
 import { useNavigate } from "react-router";
+import TwoFactorVerification from "../auth/TwoFactorVerification";
+import { auth } from "../../utils/firebaseConfig";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useDispatch();
-  const auth = getAuth(firebaseApp);
   const navigate = useNavigate();
-  const user = useSelector((state) => state.auth.user);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { loading, error, requires2FA } = useSelector((state) => state.auth);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isLoggingIn) return; // Prevent duplicate login attempts
-    setIsLoggingIn(true);
+    if (loading) return;
 
     if (!email.trim() || !password.trim()) {
       alert("Email and password are required.");
-      setIsLoggingIn(false);
       return;
     }
 
     try {
-      const auth = getAuth();
-      console.log("🔄 Attempting Firebase login...");
+      // Ensure Firebase is initialized
+      if (!auth) {
+        throw new Error("Authentication not initialized");
+      }
 
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const token = await userCredential.user.getIdToken();
-      console.log("✅ Firebase Login Success - Token:", token);
+      const result = await dispatch(login({ email, password })).unwrap();
 
-      console.log("🚀 Dispatching login to Redux...");
-      const result = await dispatch(login({ token })).unwrap();
-
-      console.log("✅ Redux Login Success!", result);
-
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userCredential.user));
-
-      navigate("/");
+      // If 2FA is not required, redirect to home
+      if (!result.requires2FA) {
+        navigate("/");
+      }
+      // If 2FA is required, the TwoFactorVerification component will be shown
     } catch (error) {
-      console.error("❌ Firebase Login Failed:", error);
-      alert("Login failed: " + error.message);
-    } finally {
-      setIsLoggingIn(false);
+      console.error("❌ Login Failed:", error);
+      alert("Login failed: " + error);
     }
   };
+
+  // Show 2FA verification screen if required
+  if (requires2FA) {
+    return <TwoFactorVerification />;
+  }
 
   return (
     <div className="max-w-sm mx-auto mt-20 p-6 bg-white shadow-lg rounded">
       <h2 className="text-2xl font-semibold mb-4 text-center">Login</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
+      )}
+
       <form onSubmit={handleLogin} className="space-y-4">
         <input
           className="w-full p-2 border rounded"
@@ -75,10 +71,11 @@ const Login = () => {
           autoComplete="current-password"
         />
         <button
-          className="w-full p-2 bg-green-500 text-white rounded"
+          className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
           type="submit"
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
